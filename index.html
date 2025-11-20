@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reborn With Zero Dignity — Episode 1</title>
+  <meta name="description" content="Interactive reader with TTS and improved responsive UI." />
+  <style>
+    :root{
+      --bg-1:#020205; --accent:#a855f7; --accent-2:#7c3aed; --muted:#9ca3af; --paper:#fffcf5;
+      --card:#0b0710; --glass: rgba(255,255,255,0.04);
+      --radius:12px;
+    }
+    html,body{height:100%; margin:0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg-1); color:#e6e6ea; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+    a{color:inherit}
+    .app{min-height:100vh; position:relative; overflow-x:hidden;}
+    .container{max-width:1100px; margin:0 auto; padding:28px 18px 120px; position:relative; z-index:10;}
+    /* NAV */
+    nav{position:fixed; top:10px; left:10px; right:10px; z-index:60; display:flex; justify-content:space-between; align-items:center; padding:12px 18px; background:linear-gradient(180deg, rgba(0,0,0,0.36), rgba(0,0,0,0.06)); border-radius:14px; box-shadow:0 6px 20px rgba(0,0,0,0.6); backdrop-filter: blur(6px);}
+    .brand{display:flex; gap:10px; align-items:center; color:var(--accent); font-weight:800; letter-spacing:0.12em; cursor:pointer;}
+    .brand .logo{font-size:18px}
+    .nav-actions{display:flex; gap:18px; align-items:center; font-weight:700; font-size:12px; color:#9aa0b0;}
+    .nav-actions button{background:none;border:0;color:inherit;cursor:pointer;padding:6px 8px;border-radius:8px; transition:color .18s, background .18s}
+    .nav-actions button:hover{color:#fff; background: rgba(255,255,255,0.02)}
+    .nav-actions button.active{color:var(--accent)}
+    .mobile-toggle{display:none; background:none;border:0;color:var(--accent); font-size:18px; cursor:pointer}
+    /* petal background */
+    .petal-bg{position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0;}
+    .bg-fill{position:absolute; inset:0; background:radial-gradient(circle at center, #1a0b2e 0%, #050505 40%, #000 100%);}
+    .fog{position:absolute; inset:0; background-image: url('https://www.transparenttextures.com/patterns/stardust.png'); opacity:0.08;}
+    .petal{position:absolute; font-size:18px; transform-origin:center; opacity:0; text-shadow:0 0 12px rgba(168,85,247,0.8); pointer-events:none;}
+    @keyframes petalFloat{0%{transform:translateY(-20vh) rotate(0deg); opacity:0}10%{opacity:1}100%{transform:translateY(110vh) rotate(360deg); opacity:0}}
+    /* HERO */
+    .hero{display:flex; flex-direction:column; align-items:center; text-align:center; margin-top:86px;}
+    .badge{background:rgba(168,85,247,0.06); border:1px solid rgba(168,85,247,0.12); color:var(--accent); padding:8px 12px; border-radius:999px; font-weight:800; font-size:11px; letter-spacing:0.18em; margin-bottom:12px; box-shadow:0 6px 18px rgba(124,58,237,0.06);}
+    h1{font-size:40px; line-height:1; margin:0 0 12px; font-weight:900; color:#fff;}
+    h1 .gradient{background:linear-gradient(90deg,#c084fc,#fb7185); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+    p.lead{color:#aab; max-width:760px; margin:0 0 22px;}
+    /* Book */
+    .book-wrap{display:flex; justify-content:center; margin-top:18px;}
+    .book{width:350px; height:540px; perspective:2000px; cursor:pointer; position:relative; transition:transform .36s ease;}
+    .book:hover{transform:translateY(-6px) scale(1.02)}
+    .cover{width:100%; height:100%; border-radius:16px; background:linear-gradient(180deg,#0b0611 0%, #0a0710 100%); padding:28px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 30px 70px rgba(0,0,0,0.6); overflow:hidden; border:1px solid rgba(168,85,247,0.06);}
+    .cover h2{font-size:18px; line-height:1.05; color:#fff; font-weight:800; text-align:center; text-shadow:0 6px 30px rgba(124,58,237,0.06)}
+    .cover .cherry{width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(124,58,237,0.18), rgba(24,6,46,0.18)); margin:0 auto; font-size:34px; box-shadow:0 0 36px rgba(168,85,247,0.18);}
+    .cover .meta{font-size:10px;color:#d6bbff; text-align:center; letter-spacing:0.18em;}
+    /* Reader modal (desktop) */
+    .reader{position:fixed; inset:0; display:none; z-index:80; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(2,2,5,0.7), rgba(2,2,5,0.85)); padding:24px; transition:opacity .32s ease;}
+    .reader.open{display:flex}
+    .reader-card{background:var(--paper); width:820px; max-width:96%; height:84vh; border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 40px 100px rgba(2,2,5,0.6); color:#221f22;}
+    .reader-header{display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:linear-gradient(90deg,#1a0b2e,#12021a); color:#f3e8ff}
+    .reader-left{display:flex; gap:12px; align-items:center;}
+    .reader-body-wrap{display:flex; gap:20px; padding:18px; flex:1; overflow:hidden}
+    .reader-body{flex:1; overflow:auto; padding:8px 6px 24px 6px; font-family: "Georgia", serif; line-height:1.7; font-size:15px; color:#1f1b1c; background: linear-gradient(180deg,#fff,#fff); border-radius:8px; box-shadow: inset 0 1px 0 rgba(0,0,0,0.02)}
+    .reader-sidebar{width:320px; max-width:34%; min-width:220px; overflow:auto; background:linear-gradient(180deg, rgba(124,58,237,0.02), rgba(124,58,237,0.01)); border-radius:8px; padding:12px; border:1px solid rgba(124,58,237,0.06);}
+    .reader-footer{height:64px; border-top:1px solid rgba(0,0,0,0.04); display:flex; align-items:center; justify-content:space-between; padding:8px 16px; background:linear-gradient(180deg,#fff0,#fff0)}
+    .reader-footer button{background:none;border:0;padding:8px 12px;border-radius:8px; cursor:pointer; transition:background .15s}
+    .reader-footer button:hover{background:rgba(0,0,0,0.03)}
+    /* TTS transcript styling */
+    #tts-transcript{font-family: Inter, system-ui, -apple-system; color:#2b2b2b; margin-top:8px; line-height:1.6; font-size:14px}
+    .tts-sentence{opacity:0.6; padding:2px 4px; border-radius:6px; transition:background .12s, color .12s, opacity .12s}
+    .tts-sentence.active{background:linear-gradient(90deg,var(--accent-2),#f472b6); color:#fff; opacity:1; box-shadow:0 6px 20px rgba(124,58,237,0.12)}
+    /* Mobile Reader */
+    .mobile-reader{display:none}
+    /* CHARACTERS */
+    .characters{display:none; margin-top:36px;}
+    .characters.open{display:block}
+    .grid{display:grid; grid-template-columns:repeat( auto-fit, minmax(240px, 1fr) ); gap:18px;}
+    .card{background:linear-gradient(180deg,#120617,#000); border:1px solid rgba(168,85,247,0.08); padding:18px; border-radius:12px; transition:transform .18s, box-shadow .18s}
+    .card:hover{transform:translateY(-6px); box-shadow:0 20px 60px rgba(0,0,0,0.6)}
+    .card h3{margin:0 0 6px; color:#dbe1ff}
+    .card p.small{margin:0 0 10px; color:#aeb4c2}
+    .ability{display:inline-block;background:linear-gradient(90deg, rgba(168,85,247,0.08), rgba(124,58,237,0.04)); color:#e6dcff; padding:4px 8px; border-radius:6px; font-size:12px; margin-right:6px; margin-bottom:6px}
+    /* audio toggle */
+    .audio-toggle{position:fixed; right:18px; top:88px; z-index:60; background:linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.12)); border:1px solid rgba(168,85,247,0.12); padding:8px 12px; border-radius:999px; color:var(--accent); font-size:12px; display:flex; gap:10px; align-items:center; cursor:pointer}
+    .audio-toggle .dot{width:10px;height:10px;border-radius:999px;background:var(--accent)}
+    /* footer */
+    footer{position:fixed; left:0; right:0; bottom:10px; padding:12px; text-align:center; color:rgba(168,85,247,0.24); font-size:12px; background:linear-gradient(to top, rgba(0,0,0,0.0), rgba(0,0,0,0)); z-index:10}
+    /* small screens */
+    @media (max-width:900px){
+      .nav-actions{display:none}
+      .mobile-toggle{display:block}
+      .hero{margin-top:110px; padding:0 12px}
+      .book{width:320px; height:480px}
+      .reader-card{width:100%; height:100vh; border-radius:0}
+      .reader-body-wrap{flex-direction:column; padding:12px}
+      .reader-sidebar{width:100%; max-width:100%}
+      .reader{align-items:flex-end; padding:0}
+      .mobile-reader{display:block}
+      .characters{margin-top:20px}
+      .container{padding-bottom:160px}
+    }
+    /* button utility */
+    .btn{background:#eee; color:#222; border-radius:8px; padding:8px 10px; cursor:pointer}
+    /* disabled */
+    button[disabled]{opacity:0.3; cursor:not-allowed}
+    /* small helpers */
+    .muted{color:var(--muted); font-size:13px}
+    .icon{display:inline-flex; width:18px; height:18px; align-items:center; justify-content:center}
+    /* page transition */
+    .page-enter{animation:pageIn .36s cubic-bezier(.2,.8,.2,1);}
+    .page-exit{animation:pageOut .28s cubic-bezier(.2,.8,.2,1);}
+    @keyframes pageIn{from{opacity:0; transform:translateX(18px)}to{opacity:1; transform:none}}
+    @keyframes pageOut{from{opacity:1}to{opacity:0; transform:translateX(-18px)}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="petal-bg" aria-hidden="true">
+      <div class="bg-fill"></div>
+      <div class="fog"></div>
+      <!-- petals injected by JS -->
+    </div>
+
+    <nav aria-label="Main navigation">
+      <div class="brand" role="button" tabindex="0" id="nav-home" aria-controls="home-view">
+        <div class="logo">✨</div>
+        <div>NOVEL<span style="color:#fff;margin-left:6px">VERSE</span></div>
+      </div>
+
+      <div class="nav-actions" id="nav-actions" role="navigation" aria-label="Pages">
+        <button id="btn-home" class="active" aria-controls="home-view">HOME</button>
+        <button id="btn-characters" aria-controls="characters-view">CHARACTERS</button>
+        <button disabled aria-disabled="true">GALLERY</button>
+      </div>
+
+      <button class="mobile-toggle" id="mobile-menu-btn" aria-haspopup="true" aria-expanded="false" aria-label="Open menu">☰</button>
+    </nav>
+
+    <div class="audio-toggle" id="audio-toggle" role="button" aria-pressed="false" title="Toggle ambient audio">
+      <span id="audio-icon">🔇</span>
+      <span style="font-size:11px">ATMOSPHERE</span>
+    </div>
+
+    <div class="container">
+      <main>
+        <section class="hero" id="home-view" aria-hidden="false">
+          <div class="badge">Original Light Novel</div>
+          <h1>REBORN WITH<br/><span class="gradient">ZERO DIGNITY</span></h1>
+          <p class="lead">A useless goddess. A tennis racket. And a cat that ruined everything. Open the grimoire to begin Episode 1.</p>
+
+          <div class="book-wrap">
+            <div class="book" id="book" aria-label="Open Episode 1">
+              <div class="cover" id="cover" role="button" tabindex="0">
+                <div style="border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:10px; display:flex; align-items:center; justify-content:center;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2L15 8H9L12 2Z" fill="#c084fc"/></svg>
+                </div>
+                <h2>Reborn With<br/>Overpowered Skills<br/><span style="color:#d6bbff; font-weight:800">and Zero Dignity</span></h2>
+                <div class="cherry" aria-hidden="true">🌸</div>
+                <div class="meta">Episode 01</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="characters" id="characters-view" aria-hidden="true">
+          <h2 style="text-align:center;color:#e9e4ff; font-weight:900; font-size:28px">Main Cast</h2>
+          <p style="text-align:center;color:#9aa0b0; margin-top:6px; margin-bottom:18px">Meet the reincarnated souls, goddesses, and shadows.</p>
+          <div class="grid" id="characters-grid" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+
+    <footer>© BiniFn 2025</footer>
+
+    <!-- Reader modal (desktop + tablet). Contains TTS controls and a transcript panel -->
+    <div class="reader" id="reader" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Episode reader">
+      <div class="reader-card" role="document">
+        <div class="reader-header">
+          <div class="reader-left">
+            <div style="font-weight:800">Ep 1</div>
+            <div class="muted" id="reader-title">The Goddess Who Pushed Me Off The Bridge</div>
+          </div>
+
+          <div style="display:flex; gap:12px; align-items:center;">
+            <div style="display:flex; gap:8px; align-items:center;">
+              <!-- TTS controls -->
+              <button id="tts-toggle" title="Play / Pause TTS" aria-pressed="false" class="btn">▶︎ TTS</button>
+              <button id="tts-stop" title="Stop TTS" class="btn">■ Stop</button>
+            </div>
+
+            <div style="display:flex; gap:8px; align-items:center;">
+              <label for="voice-select" class="muted" style="font-size:12px">Voice</label>
+              <select id="voice-select" style="padding:6px; border-radius:8px; background:#1b0b26; color:#fff; border:1px solid rgba(255,255,255,0.04)"></select>
+            </div>
+
+            <div style="display:flex; gap:8px; align-items:center;">
+              <label class="muted" for="tts-rate" style="font-size:12px">Speed</label>
+              <input id="tts-rate" type="range" min="0.6" max="1.6" step="0.1" value="1" />
+              <div id="tts-rate-val" class="muted" style="width:36px; text-align:right">1.0</div>
+            </div>
+
+            <button class="close-btn" id="reader-close" title="Close (Esc)" aria-label="Close reader">✕</button>
+          </div>
+        </div>
+
+        <div class="reader-body-wrap">
+          <div class="reader-body" id="reader-body" tabindex="0">
+            <!-- page content injected here -->
+          </div>
+
+          <aside class="reader-sidebar" id="reader-sidebar" aria-label="Reader tools">
+            <div style="font-weight:800; margin-bottom:8px">Transcript</div>
+            <div id="tts-transcript" aria-live="polite" style="max-height:66vh; overflow:auto"></div>
+            <div style="height:12px"></div>
+            <div style="font-weight:700; color:var(--accent); margin-bottom:6px">Controls</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap">
+              <button id="prev-page" title="Previous page" aria-label="Previous page" class="btn">◀ Prev</button>
+              <button id="next-page" title="Next page" aria-label="Next page" class="btn">Next ▶</button>
+            </div>
+            <div style="height:18px"></div>
+            <div class="muted" style="font-size:13px">Tap a sentence to jump and play from there.</div>
+          </aside>
+        </div>
+
+        <div class="reader-footer">
+          <div style="display:flex; gap:12px; align-items:center">
+            <div id="page-indicator" style="font-weight:700; color:var(--accent)">1 / 5</div>
+            <div class="muted" id="reader-hint" style="font-size:13px"> ← → to turn pages • Esc to close </div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button id="open-transcript" class="btn">Toggle Transcript</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile reader overlay (used on small screens) -->
+    <div id="mobile-reader" style="display:none"></div>
+
+    <!-- audio -->
+    <audio id="bg-audio" loop crossorigin preload="auto">
+      <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_d1d7d3a7cd.mp3?filename=ambient-chill-11254.mp3" type="audio/mpeg">
+      <!-- fallback: muted -->
+    </audio>
+  </div>
+
+  <script>
+    /************************************************************************
+     * Data (kept from your original component)
+     ************************************************************************/
+    const CHARACTERS = [
+      { name:"Yono Kazeshima", age:"19", role:"Reluctant Hero", desc:"Quiet, observant, and awkward. Traumatized by memories he can't fully recall.", stats:["Time Control","Instant Regeneration"], weapon:"Rocket Tennis Racket", color:"#60a5fa", icon:"⏰" },
+      { name:"Violet Arden", age:"19 (Goddess)", role:"Goddess of Flowers", desc:"Flirty, confident, and terrifyingly beautiful. She hides her fear behind jokes and teasing.", stats:["Divine Companion","Flower Magic"], weapon:"Divine Authority", color:"#c084fc", icon:"✨" },
+      { name:"Reia Lumis", age:"17", role:"First Survivor", desc:"Shy, gentle, and easily scared. A key figure Yono meets early in his journey.", stats:["Unknown"], weapon:"None", color:"#ffffff", icon:"👤" },
+      { name:"Kael Verden", age:"22", role:"Antagonist", desc:"Cold, focused, and ruthless. Has a scar across his left eye and wears dark armor.", stats:["Combat Mastery"], weapon:"Dark Blade", color:"#f87171", icon:"🗡️" },
+      { name:"The Shade", age:"???", role:"Stalker", desc:"A humanoid shadow with a distorted whispering voice that stalks Yono.", stats:["Shadow Manipulation"], weapon:"Terror", color:"#9ca3af", icon:"👻" }
+    ];
+
+    const EPISODE_PAGES = [
+      // 1
+      `<h3 style="font-family:serif; color:#3b0764; font-size:20px; margin-bottom:8px; text-align:center;">Episode 1<br/><span style="font-size:12px; font-style:italic; color:#6b21a8">The Goddess Who Pushed Me Off The Bridge</span></h3>
+      <p>Yono Arclight was nineteen years old and had two weaknesses:</p>
+      <ol><li>Convenience-store food</li><li>Daydreaming while walking</li></ol>
+      <p>He didn’t know these two things would end his life.</p>
+      <p>That day in Tokyo, he was walking home at night, holding a bag filled with instant ramen, two energy drinks, and a limited-edition cream bun.</p>
+      <p style="font-style:italic; color:#6b21a8">“Tonight I'm finally gonna relax… maybe watch anime, maybe cry a little—”</p>
+      <p>He stepped onto a pedestrian bridge. A cat stared at him. Yono stared back.</p>
+      <p style="font-style:italic; color:#6b21a8">“…Cute.”</p>
+      <p>The cat hissed. He stepped backward, tripped on the bag, tumbled over the railing… and <strong style="color:#7c3aed">Violet pushed him.</strong></p>
+      <div style="text-align:center; font-weight:900; font-size:22px; margin:16px 0; color:#111">WHAM.</div>`,
+
+      // 2
+      `<h4 style="text-align:center; color:#3b0764; margin-top:6px;">— THE AFTERLIFE —</h4>
+      <p>Yono woke face-down on smooth marble.</p>
+      <p style="font-style:italic; color:#6b21a8">“…Did I seriously get murdered by gravity?”</p>
+      <p style="color:#6b21a8; font-weight:700">“Actually, that was my fault.”</p>
+      <p>Yono jumped up. A woman stood in front of him. A <em>ridiculously</em> attractive woman.</p>
+      <p style="margin-top:8px">Long violet hair, red eyes that glowed softly, perfect legs, short black skirt, thigh-high socks, and a cropped white jacket that looked too expensive for mortals.</p>
+      <p style="color:#6b21a8; font-weight:700">“I may have accidentally pushed you off that bridge.”</p>
+      <p style="font-style:italic; color:#6b21a8">“…EXCUSE ME?!”</p>
+      <p>She shrugged. <strong style="color:#6b21a8">“You were in the way. I was trying to save that cat.”</strong></p>`,
+
+      // 3
+      `<p>She snapped her fingers. A glowing list appeared.</p>
+      <div style="border:1px solid #d9c4f7; padding:12px; margin:12px 0; border-radius:8px; background:#faf5ff;">
+        <strong style="display:block; text-align:center; color:#6b21a8; margin-bottom:6px;">COMPENSATION MENU</strong>
+        <ol style="padding-left:18px; color:#6b21a8">
+          <li>One overpowered ability</li>
+          <li>A divine companion</li>
+          <li>A weapon of your choice</li>
+          <li>A blessing for your soul</li>
+        </ol>
+      </div>
+      <p style="font-style:italic; color:#6b21a8">“…Wait. I get a goddess companion?”</p>
+      <p style="color:#6b21a8; font-weight:700">“Yep! I’m stuck with you. My punishment is babysitting you.”</p>
+      <p style="margin-top:8px">Yono selected:</p>
+      <div style="font-weight:900; text-align:center; color:#111; margin:8px 0;">TIME CONTROL &amp; REGENERATION</div>
+      <p>Next, the weapon. A glowing object appeared.</p>
+      <p style="color:#6b21a8; font-weight:700">“It shoots rockets. Don’t complain.”</p>
+      <p>It was a tennis racket. And honestly? It was sick.</p>
+      <p style="font-weight:900; text-align:center; color:#5b21b6; margin-top:12px;">“GOOD LUCK! DON’T DIE STUPIDLY THIS TIME!”</p>`,
+
+      // 4
+      `<h4 style="text-align:center; color:#3b0764">— REINCARNATION: DAY ONE —</h4>
+      <p>Yono woke up in a field. Birds chirped. His tennis-rocket-racket hummed like a beast.</p>
+      <p style="color:#b91c1c; font-weight:900">“HELP!! SOMEONE—HELP!!”</p>
+      <p>He sprinted. In a clearing, a young girl (Liri) was cornered by a giant shadow wolf.</p>
+      <p>Yono swung the racket.</p>
+      <div style="text-align:center; font-weight:900; font-size:28px; margin:12px 0;">BOOOOM!!</div>
+      <p>A rocket blast ripped the creature apart. It regenerated instantly.</p>
+      <p>The creature slashed his stomach open. It healed instantly. <em>“Right. Regeneration.”</em></p>
+      <p>He activated <strong style="color:#7c3aed">Time Control</strong>. Everything slowed. The wolf moved like molasses. Yono slammed his racket on its head—a massive burst blew the shadow apart.</p>`,
+
+      // 5
+      `<p style="color:#6b21a8; font-weight:700">“What did I tell you? Babysitting.”</p>
+      <p>Violet stood there. Real body. Skirt fluttering. Stunning.</p>
+      <p style="color:#6b21a8; font-weight:700">“You have time manipulation. Reality reacts to you now. The shadows are hunting… and you’re the juiciest one.”</p>
+      <p>Suddenly, a metallic crack echoed. A towering armored figure stepped into view, black fog leaking from its armor.</p>
+      <div style="background:#000; color:#f87171; font-weight:900; padding:8px; text-align:center; margin:12px 0; border-radius:6px;">THE SHADE WARDEN</div>
+      <p>Violet grabbed Yono’s wrist. “Run. If you fight it now… you die.” She pulled him close as shadows surged behind them.</p>
+      <div style="margin-top:18px; text-align:center; color:#7c3aed; font-weight:700; opacity:0.9; letter-spacing:0.4em;">TO BE CONTINUED</div>`
+    ];
+
+    /************************************************************************
+     * App state and DOM refs
+     ************************************************************************/
+    let view = 'home';
+    let bookOpen = false;
+    let currentPage = 0;
+    let lastPage = 0;
+    const reader = document.getElementById('reader');
+    const readerBody = document.getElementById('reader-body');
+    const transcript = document.getElementById('tts-transcript');
+    const pageIndicator = document.getElementById('page-indicator');
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    const btnHome = document.getElementById('btn-home');
+    const btnChars = document.getElementById('btn-characters');
+    const homeView = document.getElementById('home-view');
+    const charsView = document.getElementById('characters-view');
+    const charactersGrid = document.getElementById('characters-grid');
+    const cover = document.getElementById('cover');
+    const book = document.getElementById('book');
+    const audio = document.getElementById('bg-audio');
+    const audioToggle = document.getElementById('audio-toggle');
+    const audioIcon = document.getElementById('audio-icon');
+
+    /************************************************************************
+     * Petal background generation
+     ************************************************************************/
+    (function createPetals(){
+      const container = document.querySelector('.petal-bg');
+      for(let i=0;i<18;i++){
+        const s = document.createElement('div');
+        s.className='petal';
+        s.textContent='🌸';
+        const left = Math.random()*100;
+        const delay = Math.random()*6;
+        const dur = 10 + Math.random()*14;
+        s.style.left = left + '%';
+        s.style.top = (-40 - Math.random()*20) + 'px';
+        s.style.fontSize = (10 + Math.random()*26) + 'px';
+        s.style.animation = `petalFloat ${dur}s linear ${delay}s infinite`;
+        s.style.opacity = 0.9;
+        s.style.transform = `rotate(${Math.random()*360}deg)`;
+        container.appendChild(s);
+      }
+    })();
+
+    /************************************************************************
+     * Render characters
+     ************************************************************************/
+    function renderCharacters(){
+      charactersGrid.innerHTML = '';
+      CHARACTERS.forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
+            <div style="width:56px;height:56px;border-radius:999px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));display:flex;align-items:center;justify-content:center;font-size:20px">${c.icon}</div>
+            <div>
+              <div style="font-weight:800;color:${c.color}">${escapeHtml(c.name)}</div>
+              <div style="font-size:11px;color:#9aa0b0; text-transform:uppercase; letter-spacing:0.12em">${escapeHtml(c.role)} • ${escapeHtml(c.age)}</div>
+            </div>
+          </div>
+          <p class="small">${escapeHtml(c.desc)}</p>
+          <div style="margin-top:8px">
+            <div style="font-size:12px; color:#a78bfa; font-weight:700; margin-bottom:6px">Abilities</div>
+            <div>${c.stats.map(s => `<span class="ability">${escapeHtml(s)}</span>`).join('')}</div>
+            <div style="margin-top:8px; font-size:12px; color:#a78bfa; font-weight:700">Weapon</div>
+            <div style="color:#cbd5e1; margin-top:4px">${escapeHtml(c.weapon)}</div>
+          </div>
+        `;
+        charactersGrid.appendChild(card);
+      });
+    }
+
+    renderCharacters();
+
+    /************************************************************************
+     * Navigation
+     ************************************************************************/
+    document.getElementById('btn-home').addEventListener('click', ()=> navTo('home'));
+    document.getElementById('btn-characters').addEventListener('click', ()=> navTo('characters'));
+    document.getElementById('nav-home').addEventListener('click', ()=> navTo('home'));
+
+    function navTo(dest){
+      view = dest;
+      if(dest === 'home'){
+        homeView.style.display = 'flex';
+        homeView.setAttribute('aria-hidden','false');
+        charsView.style.display = 'none';
+        charsView.setAttribute('aria-hidden','true');
+        btnHome.classList.add('active'); btnChars.classList.remove('active');
+      } else {
+        homeView.style.display = 'none';
+        homeView.setAttribute('aria-hidden','true');
+        charsView.style.display = 'block';
+        charsView.setAttribute('aria-hidden','false');
+        btnHome.classList.remove('active'); btnChars.classList.add('active');
+      }
+    }
+
+    /************************************************************************
+     * Reader open / close, page rendering with animated transitions
+     ************************************************************************/
+    cover.addEventListener('click', openBook);
+    cover.addEventListener('keydown', (e)=> { if(e.key === 'Enter' || e.key === ' ') openBook(); });
+
+    function openBook(){
+      bookOpen = true;
+      renderPage(true);
+      reader.classList.add('open');
+      reader.setAttribute('aria-hidden','false');
+      readerBody.focus();
+      document.body.style.overflow = 'hidden';
+      // announce
+      pageIndicator.textContent = (currentPage +1) + ' / ' + EPISODE_PAGES.length;
+    }
+    function closeBook(){
+      bookOpen = false;
+      stopTTS();
+      reader.classList.remove('open');
+      reader.setAttribute('aria-hidden','true');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('reader-close').addEventListener('click', ()=> { closeBook(); currentPage=0; renderPage(true); });
+
+    prevBtn.addEventListener('click', ()=> { if(currentPage>0) { lastPage = currentPage; currentPage--; renderPage(false); }});
+    nextBtn.addEventListener('click', ()=> { if(currentPage < EPISODE_PAGES.length-1){ lastPage = currentPage; currentPage++; renderPage(true); }});
+
+    function renderPage(instant = false){
+      // small animation: add class page-enter; remove previous classes quickly
+      readerBody.classList.remove('page-enter','page-exit');
+      void readerBody.offsetWidth;
+      readerBody.classList.add('page-enter');
+      readerBody.innerHTML = EPISODE_PAGES[currentPage];
+
+      // update page indicator and buttons
+      pageIndicator.textContent = (currentPage +1) + ' / ' + EPISODE_PAGES.length;
+      prevBtn.disabled = currentPage === 0;
+      nextBtn.disabled = currentPage === EPISODE_PAGES.length-1;
+
+      // prepare a transcript for TTS highlighting
+      buildTranscriptFromHTML(EPISODE_PAGES[currentPage]);
+
+      // if TTS was playing, restart with new page
+      if(ttsPlaying){
+        stopTTS(); // stop any existing queue
+        startTTSFromIndex(0);
+      }
+    }
+
+    /************************************************************************
+     * Keyboard navigation and touch swipe
+     ************************************************************************/
+    window.addEventListener('keydown', (e)=>{
+      if(!bookOpen) return;
+      if(e.key === 'ArrowRight') { if(currentPage < EPISODE_PAGES.length-1) { lastPage = currentPage; currentPage++; renderPage(true); } }
+      if(e.key === 'ArrowLeft') { if(currentPage > 0) { lastPage = currentPage; currentPage--; renderPage(true); } }
+      if(e.key === 'Escape') { closeBook(); currentPage = 0; renderPage(true); }
+    });
+
+    // touch swipe for reader-body
+    let touchStartX = null;
+    readerBody.addEventListener('touchstart', (e)=> { touchStartX = e.touches[0].clientX; }, {passive:true});
+    readerBody.addEventListener('touchend', (e)=> {
+      if(touchStartX == null) return;
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if(diff > 60) { // left swipe
+        if(currentPage < EPISODE_PAGES.length-1) { lastPage = currentPage; currentPage++; renderPage(true); }
+      } else if(diff < -60){
+        if(currentPage > 0) { lastPage = currentPage; currentPage--; renderPage(true); }
+      }
+      touchStartX = null;
+    });
+
+    /************************************************************************
+     * TTS subsystem (Web Speech API)
+     *
+     * - Splits page plain text into sentences for playback
+     * - Highlights transcript sentences as they're spoken
+     * - Voice selection, rate control, persisted settings
+     ************************************************************************/
+    const synth = window.speechSynthesis;
+    let ttsQueue = []; // array of sentences
+    let ttsIndex = 0;
+    let ttsPlaying = false;
+    let ttsPaused = false;
+    const ttsToggleBtn = document.getElementById('tts-toggle');
+    const ttsStopBtn = document.getElementById('tts-stop');
+    const voiceSelect = document.getElementById('voice-select');
+    const rateInput = document.getElementById('tts-rate');
+    const rateVal = document.getElementById('tts-rate-val');
+
+    const TTS_KEY = 'nv:tts-settings';
+
+    function loadTTSSettings(){
+      try{
+        const raw = localStorage.getItem(TTS_KEY);
+        if(!raw) return {rate:1,voiceURI:null};
+        return JSON.parse(raw);
+      }catch(e){
+        return {rate:1,voiceURI:null};
+      }
+    }
+    function saveTTSSettings(settings){
+      try{ localStorage.setItem(TTS_KEY, JSON.stringify(settings)); }catch(e){}
+    }
+
+    // populate voices when available
+    function populateVoices(){
+      const voices = synth.getVoices();
+      voiceSelect.innerHTML = '';
+      voices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.voiceURI;
+        opt.textContent = `${v.name} ${v.lang ? '— ' + v.lang : ''}${v.default ? ' (default)' : ''}`;
+        voiceSelect.appendChild(opt);
+      });
+      // restore saved voice
+      const s = loadTTSSettings();
+      if(s.voiceURI){
+        const match = Array.from(voiceSelect.options).find(o => o.value === s.voiceURI);
+        if(match) voiceSelect.value = s.voiceURI;
+      }
+    }
+    populateVoices();
+    synth.onvoiceschanged = populateVoices;
+
+    // update rate display
+    rateInput.addEventListener('input', ()=> { rateVal.textContent = parseFloat(rateInput.value).toFixed(1); saveTTSSettings({ ...loadTTSSettings(), rate: parseFloat(rateInput.value) }); });
+
+    // TTS button handlers
+    ttsToggleBtn.addEventListener('click', ()=> {
+      if(!ttsPlaying){
+        // start from beginning
+        startTTSFromIndex(0);
+      } else if(ttsPlaying && !ttsPaused){
+        // pause
+        synth.pause();
+        ttsPaused = true;
+        ttsToggleBtn.textContent = '❚❚ Resume';
+        ttsToggleBtn.setAttribute('aria-pressed','true');
+      } else if(ttsPlaying && ttsPaused){
+        // resume
+        synth.resume();
+        ttsPaused = false;
+        ttsToggleBtn.textContent = '⏸︎ TTS';
+        ttsToggleBtn.setAttribute('aria-pressed','true');
+      }
+    });
+
+    ttsStopBtn.addEventListener('click', ()=> {
+      stopTTS();
+    });
+
+    // click transcript sentence to play from that sentence
+    transcript.addEventListener('click', (e)=> {
+      const target = e.target.closest('.tts-sentence');
+      if(!target) return;
+      const idx = Number(target.dataset.ttsIndex);
+      if(!Number.isFinite(idx)) return;
+      startTTSFromIndex(idx);
+    });
+
+    // build transcript HTML and prepare sentence array
+    function buildTranscriptFromHTML(html){
+      // convert to plain text but preserve paragraph breaks
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      // remove leading/trailing whitespace and compress multiple spaces
+      const text = tmp.textContent || tmp.innerText || '';
+      // split into sentences heuristically
+      const sentences = splitIntoSentences(text.trim());
+      ttsQueue = sentences;
+      renderTranscript(sentences);
+    }
+
+    function splitIntoSentences(text){
+      // naive sentence split: split after ., ? or ! followed by space or line end
+      const result = text.match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g);
+      if(!result) return [text];
+      return result.map(s => s.trim()).filter(Boolean);
+    }
+
+    function renderTranscript(sentences){
+      transcript.innerHTML = sentences.map((s,i)=>`<span data-tts-index="${i}" class="tts-sentence">${escapeHtml(s)}</span>`).join(' ');
+      // scroll to active dynamically when speaking
+    }
+
+    function startTTSFromIndex(idx){
+      stopTTS(true); // stop but don't clear UI maybe
+      const settings = loadTTSSettings();
+      rateInput.value = settings.rate || 1;
+      rateVal.textContent = parseFloat(rateInput.value).toFixed(1);
+      ttsIndex = idx || 0;
+      if(!ttsQueue || ttsQueue.length === 0){
+        // fallback: build from current body
+        const tmp = document.createElement('div'); tmp.innerHTML = EPISODE_PAGES[currentPage];
+        ttsQueue = splitIntoSentences((tmp.textContent || tmp.innerText || '').trim());
+        renderTranscript(ttsQueue);
+      }
+      ttsPlaying = true;
+      ttsPaused = false;
+      ttsToggleBtn.textContent = '⏸︎ TTS';
+      ttsToggleBtn.setAttribute('aria-pressed','true');
+      speakNextSentence();
+    }
+
+    function speakNextSentence(){
+      if(!ttsPlaying) return;
+      if(ttsIndex >= ttsQueue.length){
+        // finished page
+        stopTTS();
+        return;
+      }
+      const sentence = ttsQueue[ttsIndex];
+      const utter = new SpeechSynthesisUtterance(sentence);
+      // set voice if chosen
+      const voiceURI = (voiceSelect.value && voiceSelect.value !== '') ? voiceSelect.value : null;
+      if(voiceURI){
+        const voice = synth.getVoices().find(v => v.voiceURI === voiceURI);
+        if(voice) utter.voice = voice;
+      }
+      utter.rate = parseFloat(rateInput.value || 1);
+      utter.onstart = ()=> {
+        highlightTranscriptSentence(ttsIndex);
+      };
+      utter.onend = ()=> {
+        ttsIndex++;
+        // small delay to avoid overlap on some devices
+        setTimeout(() => speakNextSentence(), 80);
+      };
+      utter.onerror = (e)=> {
+        console.warn('TTS error', e);
+        ttsIndex++;
+        setTimeout(() => speakNextSentence(), 80);
+      };
+      synth.speak(utter);
+    }
+
+    function stopTTS(preserveUI = false){
+      if(synth && synth.speaking) synth.cancel();
+      ttsPlaying = false;
+      ttsPaused = false;
+      if(!preserveUI){
+        ttsToggleBtn.textContent = '▶︎ TTS';
+        ttsToggleBtn.setAttribute('aria-pressed','false');
+      } else {
+        ttsToggleBtn.textContent = '▶︎ TTS';
+        ttsToggleBtn.setAttribute('aria-pressed','false');
+      }
+      // remove active highlight
+      const prev = transcript.querySelector('.tts-sentence.active');
+      if(prev) prev.classList.remove('active');
+    }
+
+    function highlightTranscriptSentence(i){
+      const prev = transcript.querySelector('.tts-sentence.active');
+      if(prev) prev.classList.remove('active');
+      const el = transcript.querySelector(`.tts-sentence[data-tts-index="${i}"]`);
+      if(el){
+        el.classList.add('active');
+        // ensure visible
+        el.scrollIntoView({behavior:'smooth', block:'center', inline:'nearest'});
+      }
+    }
+
+    // voice selection persistence
+    voiceSelect.addEventListener('change', ()=> {
+      const s = loadTTSSettings();
+      saveTTSSettings({ ...s, voiceURI: voiceSelect.value });
+    });
+
+    // load saved TTS settings on start
+    (function initTTSFromStorage(){
+      const s = loadTTSSettings();
+      rateInput.value = s.rate || 1;
+      rateVal.textContent = parseFloat(rateInput.value).toFixed(1);
+    })();
+
+    /************************************************************************
+     * Utility: escapeHtml
+     ************************************************************************/
+    function escapeHtml(unsafe){
+      if(unsafe == null) return '';
+      return String(unsafe)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    /************************************************************************
+     * Audio toggle (persisted)
+     ************************************************************************/
+    const AUDIO_KEY = 'nv:atmosphere';
+    function loadAudioState(){
+      const val = localStorage.getItem(AUDIO_KEY);
+      return val === '1';
+    }
+    function setAudioState(enabled){
+      audioToggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+      if(enabled){
+        audio.play().catch(()=>{/* user gesture may be required, ignore */});
+        audioIcon.textContent = '🔊';
+        localStorage.setItem(AUDIO_KEY,'1');
+      } else {
+        audio.pause();
+        audioIcon.textContent = '🔇';
+        localStorage.setItem(AUDIO_KEY,'0');
+      }
+    }
+    audioToggle.addEventListener('click', ()=> {
+      const newState = audio.paused;
+      setAudioState(newState);
+    });
+
+    // initialize audio from storage
+    try{ setAudioState(loadAudioState()); }catch(e){ setAudioState(false); }
+
+    /************************************************************************
+     * Mobile menu handling (simple)
+     ************************************************************************/
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    mobileBtn.addEventListener('click', ()=> {
+      const expanded = mobileBtn.getAttribute('aria-expanded') === 'true';
+      mobileBtn.setAttribute('aria-expanded', String(!expanded));
+      if(!expanded){
+        const menu = document.createElement('div');
+        menu.style.position='fixed';
+        menu.style.inset='0';
+        menu.style.background='linear-gradient(180deg, rgba(0,0,0,0.95), rgba(10,4,18,0.95))';
+        menu.style.zIndex=9999;
+        menu.style.display='flex';
+        menu.style.flexDirection='column';
+        menu.style.justifyContent='center';
+        menu.style.alignItems='center';
+        menu.style.gap='18px';
+        menu.innerHTML = `<button class="btn" id="m-home">Home</button><button class="btn" id="m-chars">Characters</button><button class="btn" id="m-close">Close</button>`;
+        menu.querySelector('#m-home').addEventListener('click', ()=> { navTo('home'); menu.remove(); mobileBtn.setAttribute('aria-expanded','false'); });
+        menu.querySelector('#m-chars').addEventListener('click', ()=> { navTo('characters'); menu.remove(); mobileBtn.setAttribute('aria-expanded','false'); });
+        menu.querySelector('#m-close').addEventListener('click', ()=> { menu.remove(); mobileBtn.setAttribute('aria-expanded','false'); });
+        document.body.appendChild(menu);
+      } else {
+        document.querySelectorAll('body > div').forEach(d=>{
+          if(d.style && d.style.position==='fixed' && d.style.zIndex==='9999') d.remove();
+        });
+      }
+    });
+
+    /************************************************************************
+     * Mobile reader (full-screen) helper for small screens
+     ************************************************************************/
+    function isSmallScreen(){ return window.innerWidth < 900; }
+
+    function openMobileReaderOverlay(){
+      // build overlay
+      stopTTS();
+      const overlay = document.createElement('div');
+      overlay.style.position='fixed';
+      overlay.style.inset=0;
+      overlay.style.zIndex=10000;
+      overlay.style.background= '#fffcf5';
+      overlay.style.display='flex';
+      overlay.style.flexDirection='column';
+
+      overlay.innerHTML = `
+        <div style="background:#1a0b2e; color:#f3e8ff; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:800">Ep 1: The Goddess...</div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button id="m-tts" class="btn">▶︎ TTS</button>
+            <button id="m-close" class="btn">✕</button>
+          </div>
+        </div>
+        <div id="m-body" style="padding:18px; overflow:auto; font-family:Georgia,serif; color:#231f20; flex:1">${EPISODE_PAGES[currentPage]}</div>
+        <div style="display:flex; gap:12px; padding:12px; background:#fffcf5; align-items:center; justify-content:space-between;">
+          <button id="m-prev" class="btn">◀ Prev</button>
+          <div style="font-weight:700">${currentPage+1} / ${EPISODE_PAGES.length}</div>
+          <button id="m-next" class="btn">Next ▶</button>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+      overlay.querySelector('#m-close').addEventListener('click', ()=> { overlay.remove(); stopTTS(); });
+      overlay.querySelector('#m-prev').addEventListener('click', ()=> { if(currentPage>0){ currentPage--; overlay.querySelector('#m-body').innerHTML = EPISODE_PAGES[currentPage]; }});
+      overlay.querySelector('#m-next').addEventListener('click', ()=> { if(currentPage<EPISODE_PAGES.length-1){ currentPage++; overlay.querySelector('#m-body').innerHTML = EPISODE_PAGES[currentPage]; }});
+      overlay.querySelector('#m-tts').addEventListener('click', (e)=> {
+        if(!ttsPlaying){
+          // use body text for tts
+          const text = (overlay.querySelector('#m-body').innerText || '').trim();
+          ttsQueue = splitIntoSentences(text);
+          renderTranscript(ttsQueue); // show transcript in sidebar if user opens desktop later
+          startTTSFromIndex(0);
+        } else {
+          stopTTS();
+        }
+      });
+    }
+
+    // adapt click behavior on small screens
+    function adaptBookClick(){
+      if(isSmallScreen()){
+        cover.removeEventListener('click', openBook);
+        cover.addEventListener('click', openMobileReaderOverlay);
+      } else {
+        cover.removeEventListener('click', openMobileReaderOverlay);
+        cover.addEventListener('click', openBook);
+      }
+    }
+    window.addEventListener('resize', adaptBookClick);
+    adaptBookClick();
+
+    /************************************************************************
+     * Transcript toggle
+     ************************************************************************/
+    document.getElementById('open-transcript').addEventListener('click', ()=>{
+      const sidebar = document.getElementById('reader-sidebar');
+      if(sidebar.style.display === 'none'){
+        sidebar.style.display = '';
+      } else {
+        sidebar.style.display = sidebar.style.display === 'none' ? '' : 'block';
+      }
+    });
+
+    /************************************************************************
+     * Small init and accessibility helpers
+     ************************************************************************/
+    // hide characters view initially
+    navTo('home');
+
+    // keyboard focus improvements
+    document.getElementById('reader-close').setAttribute('aria-label','Close reader');
+
+    // ensure page rendering initially
+    renderPage(true);
+
+    // voice availability may be async — try to repopulate
+    if(synth.getVoices().length === 0){
+      // some browsers require a short delay
+      setTimeout(populateVoices, 500);
+      setTimeout(populateVoices, 1200);
+    }
+
+    // ensure audio does not attempt to autoplay in browsers that block it
+    if(!localStorage.getItem(AUDIO_KEY)) setAudioState(false);
+
+    // accessibility: allow space on TTS toggle when focused
+    ttsToggleBtn.addEventListener('keydown', (e)=> { if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); ttsToggleBtn.click(); } });
+
+    /************************************************************************
+     * Final note: small helpers & safety
+     ************************************************************************/
+    // make sure the transcript is clickable (delegated earlier)
+    // when leaving the page, stop TTS
+    window.addEventListener('beforeunload', ()=> { stopTTS(); });
+
+    // expose a small dev helper to window for debugging
+    window._novel = { startTTSFromIndex, stopTTS, synth };
+  </script>
+</body>
+</html>
