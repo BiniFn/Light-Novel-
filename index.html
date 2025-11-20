@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Reborn With Zero Dignity</title>
+  <meta name="description" content="Immersive Light Novel Reader" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* ------------------------------------------------------------------
+       CORE THEME
+       ------------------------------------------------------------------ */
+    :root {
+      --bg-deep: #030204;
+      --bg-panel: #120b1a;
+      --primary: #9333ea;
+      --primary-glow: rgba(147, 51, 234, 0.5);
+      --accent: #d946ef;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --border: rgba(255, 255, 255, 0.08);
+      --radius: 16px;
+      --font-display: 'Cinzel', serif;
+      --font-ui: 'Inter', sans-serif;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; background: var(--bg-deep); color: var(--text-main); font-family: var(--font-ui); height: 100vh; overflow: hidden; }
+
+    /* ------------------------------------------------------------------
+       ANIMATIONS
+       ------------------------------------------------------------------ */
+    @keyframes drift { from { background-position: 0 0; } to { background-position: 500px 500px; } }
+    @keyframes float { 
+      0%, 100% { transform: translateY(0) rotateY(0deg); } 
+      50% { transform: translateY(-15px) rotateY(5deg); } 
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeText {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-anim { opacity: 0; animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    .text-fade-in { animation: fadeText 0.5s ease forwards; }
+
+    /* ------------------------------------------------------------------
+       BACKGROUND
+       ------------------------------------------------------------------ */
+    .stars { 
+      position: fixed; inset: 0; z-index: -2;
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 80%);
+    }
+    .dust { 
+      position: fixed; inset: 0; z-index: -1; pointer-events: none; 
+      background-image: url('https://www.transparenttextures.com/patterns/stardust.png'); 
+      opacity: 0.4; animation: drift 120s linear infinite;
+    }
+
+    /* ------------------------------------------------------------------
+       LAYOUT
+       ------------------------------------------------------------------ */
+    .app { display: flex; flex-direction: column; height: 100%; }
+
+    header {
+      height: 64px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between;
+      background: rgba(3, 2, 4, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); z-index: 50;
+      animation: fadeInUp 0.5s ease;
+    }
+    .logo { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: #fff; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.3s; }
+    .logo:hover { text-shadow: 0 0 15px var(--primary); }
+    .logo span { color: var(--primary); font-size: 22px; }
+
+    /* UPDATED: SCROLLABLE NAV TABS FOR MOBILE */
+    .nav-tabs { 
+      display: flex; gap: 4px; background: rgba(255,255,255,0.03); padding: 4px; border-radius: 99px; border: 1px solid var(--border); 
+      /* Scroll logic */
+      overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; max-width: 100%;
+      /* Smooth scrolling on iOS */
+      -webkit-overflow-scrolling: touch;
+      /* Hide Scrollbar but keep functionality */
+      scrollbar-width: none; 
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+
+    .tab {
+      background: none; border: none; color: var(--text-muted); padding: 8px 16px; border-radius: 99px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; flex-shrink: 0;
+    }
+    .tab:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .tab.active { background: rgba(147, 51, 234, 0.15); color: #d8b4fe; border: 1px solid rgba(147, 51, 234, 0.3); box-shadow: 0 0 15px rgba(147, 51, 234, 0.2); }
+
+    main { flex: 1; overflow-y: auto; position: relative; padding-bottom: 40px; scroll-behavior: smooth; }
+    .view { display: none; padding: 24px; max-width: 1000px; margin: 0 auto; }
+    .view.active { display: block; }
+
+    /* ------------------------------------------------------------------
+       COMPONENTS
+       ------------------------------------------------------------------ */
+    .hero-section { text-align: center; padding-top: 20px; }
+    .hero-title { 
+      font-family: var(--font-display); font-size: 42px; margin-bottom: 8px; 
+      background: linear-gradient(to bottom, #fff, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      animation: fadeInUp 0.8s ease;
+    }
+    .hero-sub {
+      color: var(--text-muted); max-width: 500px; margin: 0 auto;
+      animation: fadeInUp 0.8s ease 0.1s forwards; opacity: 0;
+    }
+
+    .book-3d {
+      width: 200px; height: 300px; margin: 40px auto; position: relative; perspective: 1000px; cursor: pointer;
+      animation: float 6s ease-in-out infinite;
+    }
+    .book-inner {
+      width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.4s ease-out;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.6); border-radius: 8px;
+    }
+    .book-3d:hover .book-inner { transform: rotateY(-15deg) rotateX(10deg) scale(1.05); box-shadow: 0 40px 80px rgba(147, 51, 234, 0.3); }
+    .cover-face {
+      position: absolute; inset: 0; background: linear-gradient(145deg, #1e1b4b, #000);
+      border: 1px solid rgba(147,51,234,0.3); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    
+    .cta-group { display: flex; gap:16px; justify-content:center; animation: fadeInUp 0.8s ease 0.3s forwards; opacity: 0; }
+    .cta-btn {
+      background: var(--primary); color: #fff; border: none; padding: 14px 32px; border-radius: 12px; font-weight: 700;
+      font-size: 16px; cursor: pointer; box-shadow: 0 0 20px var(--primary-glow); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: inline-flex; align-items: center; gap: 8px;
+    }
+    .cta-btn:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 10px 30px var(--primary-glow); background: #a855f7; }
+    .cta-btn:active { transform: scale(0.95); }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+    .card {
+      background: var(--bg-panel); border: 1px solid var(--border); padding: 20px; border-radius: var(--radius);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; overflow: hidden;
+    }
+    .card:hover { border-color: var(--primary); transform: translateY(-8px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .card h3 { font-family: var(--font-display); margin: 0 0 8px; color: #fff; }
+    .card p { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; }
+    .ep-tag { position: absolute; top: 16px; right: 16px; font-size: 10px; background: rgba(147,51,234,0.2); color: #d8b4fe; padding: 4px 8px; border-radius: 4px; font-weight: 700; }
+    
+    .char-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .char-icon { font-size: 24px; background: rgba(255,255,255,0.05); width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--border); flex-shrink: 0; transition: 0.3s; }
+    .card:hover .char-icon { background: rgba(147, 51, 234, 0.2); border-color: var(--primary); transform: scale(1.1); }
+    .age-badge { font-size: 10px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 8px; color: var(--text-muted); white-space: nowrap; }
+
+    /* ------------------------------------------------------------------
+       GALLERY STYLES
+       ------------------------------------------------------------------ */
+    .gallery-split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 700px) { .gallery-split { grid-template-columns: 1fr; } }
+
+    .gallery-col h2 { 
+      font-family: var(--font-display); font-size: 24px; margin-bottom: 16px; 
+      border-bottom: 2px solid var(--border); padding-bottom: 8px; display: flex; align-items: center; gap:10px;
+    }
+    .yono-col h2 { color: #60a5fa; border-color: rgba(96, 165, 250, 0.3); }
+    .violet-col h2 { color: #d8b4fe; border-color: rgba(216, 180, 254, 0.3); }
+
+    .art-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+    
+    .art-card {
+      background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+      aspect-ratio: 3/4; cursor: pointer; position: relative; transition: all 0.3s ease;
+    }
+    .art-card:hover { transform: scale(1.05); z-index: 2; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-color: #fff; }
+    
+    .art-img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+    .art-card:hover .art-img { filter: brightness(1.1); }
+    
+    .art-label {
+      position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.8); 
+      padding: 6px; font-size: 10px; color: #fff; text-align: center; opacity: 0; transition: 0.3s;
+    }
+    .art-card:hover .art-label { opacity: 1; }
+
+    /* ------------------------------------------------------------------
+       READER OVERLAY
+       ------------------------------------------------------------------ */
+    #reader {
+      position: fixed; inset: 0; z-index: 100; background: #050308; display: flex; flex-direction: column;
+      transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    #reader.open { transform: translateY(0); }
+
+    .reader-top {
+      height: 64px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: rgba(5,3,8,0.98);
+    }
+    .back-btn {
+      background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: #fff; 
+      padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; gap: 6px; transition: 0.2s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.2); transform: translateX(-2px); }
+    .reader-title { font-size: 14px; font-weight: 600; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; text-align: center; }
+    .reader-body {
+      flex: 1; overflow-y: auto; padding: 40px 24px; max-width: 800px; margin: 0 auto; width: 100%;
+      color: #e2e8f0; transition: font-size 0.2s;
+    }
+    .reader-body h3 { font-family: var(--font-display); color: var(--primary); text-align: center; margin-bottom: 30px; font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .reader-body p { margin-bottom: 1.5em; }
+    .reader-btm {
+      height: 72px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: rgba(5,3,8,0.98);
+    }
+    .nav-btn { background: rgba(255,255,255,0.08); border: none; width: 48px; height: 48px; border-radius: 12px; color: #fff; font-size: 20px; cursor: pointer; display: grid; place-items: center; transition: 0.2s; }
+    .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .nav-btn:active { transform: scale(0.9); }
+    .nav-btn:not(:disabled):hover { background: var(--primary); transform: translateY(-2px); }
+
+    /* ------------------------------------------------------------------
+       SETTINGS PANEL
+       ------------------------------------------------------------------ */
+    .panel {
+      position: absolute; bottom: 90px; right: 20px; width: 280px;
+      background: #1a1625; border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9); opacity: 0; pointer-events: none; 
+      transform: translateY(20px) scale(0.95); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 110;
+    }
+    .panel.open { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
+    .panel-label { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; display: block; }
+    .range-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; }
+    .font-opts { display: flex; gap: 8px; }
+    .font-btn { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: 0.2s; }
+    .font-btn:hover { background: rgba(255,255,255,0.1); }
+    .font-btn.active { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+    .icon-btn { background: none; border: none; color: #fff; opacity: 0.7; cursor: pointer; padding: 8px; transition: 0.2s; }
+    .icon-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); border-radius: 8px; transform: scale(1.1); }
+    .section-header { color: var(--accent); font-weight: 700; margin-bottom: 15px; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; animation: fadeInUp 0.6s ease; }
+  </style>
+</head>
+<body>
+
+  <div class="stars"></div>
+  <div class="dust"></div>
+
+  <div class="app">
+    <header>
+      <div class="logo" onclick="switchView('home', null)"><span>✦</span> NOVELVERSE</div>
+      <nav class="nav-tabs">
+        <button class="tab active" onclick="switchView('home', this)">Home</button>
+        <button class="tab" onclick="switchView('episodes', this)">Episodes</button>
+        <button class="tab" onclick="switchView('characters', this)">Cast</button>
+        <button class="tab" onclick="switchView('gallery', this)">Art</button>
+      </nav>
+    </header>
+
+    <main>
+      
+      <section id="view-home" class="view active">
+        <div class="hero-section">
+          <h1 class="hero-title">Reborn With<br>Zero Dignity</h1>
+          <p class="hero-sub">A useless goddess. A tennis racket. And a cat that ruined everything.</p>
+          <div class="book-3d" onclick="loadEpisode(1)">
+            <div class="book-inner">
+              <div class="cover-face">
+                <span style="font-size:48px; filter:drop-shadow(0 0 10px var(--accent));">🌸</span>
+                <h3 style="font-family:var(--font-display); color:#fff; margin-top:10px;">Volume 1</h3>
+              </div>
+            </div>
+          </div>
+          <div class="cta-group">
+            <button class="cta-btn" onclick="loadEpisode(1)">Read Ep 1</button>
+            <button class="cta-btn" style="background:rgba(255,255,255,0.1); box-shadow:none;" onclick="loadEpisode(2)">Ep 2</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-episodes" class="view">
+        <h2 style="font-family:var(--font-display); margin-bottom:20px; animation: fadeInUp 0.6s ease;">Episode List</h2>
+        <div class="grid" id="episodes-grid"></div>
+      </section>
+
+      <section id="view-characters" class="view">
+        <h2 style="font-family:var(--font-display); margin-bottom:10px; animation: fadeInUp 0.6s ease;">Main Cast</h2>
+        <div class="section-header">Episode 1 Introductions</div>
+        <div class="grid" id="cast-grid-ep1"></div>
+        <div class="section-header">Episode 2 Additions</div>
+        <div class="grid" id="cast-grid-ep2"></div>
+      </section>
+
+      <section id="view-gallery" class="view">
+        <div style="text-align:center; margin-bottom:24px; animation: fadeInUp 0.6s ease;">
+           <h2 style="font-family:var(--font-display);">Character Art</h2>
+           <p style="color:var(--text-muted); font-size:13px;">Concept art & Illustrations from the Archives</p>
+        </div>
+        
+        <div class="gallery-split">
+          <div class="gallery-col yono-col">
+            <h2><span>⏰</span> Yono Kazeshima</h2>
+            <div id="art-grid-yono" class="art-grid"></div>
+          </div>
+
+          <div class="gallery-col violet-col">
+            <h2><span>✨</span> Violet Arden</h2>
+            <div id="art-grid-violet" class="art-grid"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div id="reader">
+    <div class="reader-top">
+      <button class="back-btn" onclick="closeReader()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        EXIT
+      </button>
+      <span class="reader-title" id="reader-ep-title">Episode Title</span>
+      <button class="icon-btn" onclick="toggleSettings()" title="Text Settings" style="font-weight:700; font-size:18px; font-family:serif;">Aa</button>
+    </div>
+    <div class="reader-body" id="reader-content"></div>
+    <div class="reader-btm">
+      <button class="nav-btn" id="prev-page-btn" onclick="changePage(-1)">←</button>
+      <span style="font-size:12px; color:var(--text-muted); font-weight:700;" id="page-indicator">1 / 5</span>
+      <button class="nav-btn" id="next-page-btn" onclick="changePage(1)">→</button>
+    </div>
+    <div id="panel-settings" class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <span style="color:#fff; font-weight:700;">Reader Settings</span>
+        <button class="icon-btn" onclick="toggleSettings()">✕</button>
+      </div>
+      <span class="panel-label">Font Size</span>
+      <div class="range-wrap">
+        <span style="font-size:12px;">A</span>
+        <input type="range" id="font-size-range" min="14" max="28" value="18">
+        <span style="font-size:18px;">A</span>
+      </div>
+      <span class="panel-label">Font Style</span>
+      <div class="font-opts">
+        <button class="font-btn active" onclick="setFont('serif', this)">Serif</button>
+        <button class="font-btn" onclick="setFont('sans', this)">Sans</button>
+        <button class="font-btn" onclick="setFont('mono', this)">Mono</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ------------------------------------------------------------------
+       USER CONFIG: ASSET LIST
+       ------------------------------------------------------------------ */
+    // STEP 1: Create an 'assets' folder.
+    // STEP 2: Add images to that folder.
+    // STEP 3: List the names here. "yono" names go left, "violet" names go right.
+    const ASSET_FILES = [
+      "Yono_Concept.jpg",
+      "Violet_Portrait.png",
+      "yono_battle_form.jpg",
+      "violet_goddess_aura.webp"
+    ];
+
+    const CAST_EP1 = [
+      { name: "Yono Kazeshima", age: "19", role: "Protagonist", icon: "⏰", color: "#60a5fa", desc: "Time Control & Regeneration. Died by fridge." },
+      { name: "Violet Arden", age: "19 (Goddess)", role: "Goddess", icon: "✨", color: "#c084fc", desc: "Goddess of Flowers. Pushed Yono to save a cat." },
+      { name: "The Shade", age: "Unknown", role: "Stalker", icon: "👻", color: "#9ca3af", desc: "A mysterious entity hunting reincarnated souls." },
+      { name: "Liri", age: "10", role: "Survivor", icon: "👧", color: "#fff", desc: "Young girl saved in the forest." }
+    ];
+
+    const CAST_EP2 = [
+      { name: "Serah Nightbloom", age: "21", role: "Warrior", icon: "⚔️", color: "#fb7185", desc: "Twin Sabers. Cocky, competitive, and flirty." },
+      { name: "Mirika Solenne", age: "24", role: "Court Mage", icon: "🔮", color: "#22d3ee", desc: "Elegant, teasing mage with high-slit robes." },
+      { name: "Rin & Rina", age: "12", role: "Item Shop Twins", icon: "👯", color: "#c084fc", desc: "Short, tiny, cute white-haired twins. Energetic and curious." },
+      { name: "Elder Meryn", age: "31", role: "Healer", icon: "🌿", color: "#34d399", desc: "Motherly figure who runs the safehouse." },
+      { name: "Kael Thornhart", age: "22", role: "Elite Knight", icon: "🛡️", color: "#93c5fd", desc: "Silver armor, serious demeanor." }
+    ];
+
+    const EPISODES_DATA = {
+      1: {
+        title: "Ep 1: The Goddess Who Pushed Me",
+        pages: [
+          `<h3>The Dumbest Death</h3><p>Yono Arclight was nineteen years old and had two weaknesses: Convenience-store food and Daydreaming while walking. He didn’t know these two things would end his life. That day in Tokyo, he was walking home at night, holding a bag filled with instant ramen, two energy drinks, and a limited-edition cream bun.</p><p>He stepped onto a pedestrian bridge. A cat stared at him. The cat hissed. He stepped backward, tripped on the bag, tumbled over the railing… and <strong>Violet pushed him.</strong></p><p style="text-align:center; font-weight:900; font-size:22px; margin:16px 0; color:#e6e6ea">WHAM.</p>`,
+          `<h3>The Afterlife</h3><p>Yono woke face-down on smooth marble. <em>“…Did I seriously get murdered by gravity?”</em></p><p><strong>“Actually, that was my fault.”</strong></p><p>A woman stood in front of him. A ridiculously attractive woman. Long violet hair, red eyes that glowed softly. “I may have accidentally pushed you off that bridge. You were in the way. I was trying to save that cat.”</p><p>“YOU KILLED ME TO SAVE A CAT?!”</p><p>“Don’t be dramatic. I’ll compensate you. How do you feel about reincarnation?”</p>`,
+          `<h3>Compensation Menu</h3><div style="border:1px solid rgba(167,139,250,0.2); padding:12px; margin:12px 0; border-radius:8px;"><ol style="padding-left:18px; color:#c4b5fd"><li>One overpowered ability</li><li>A divine companion</li><li>A weapon of your choice</li></ol></div><p>“Wait. I get a goddess companion?”</p><p>“Yep! I’m stuck with you. My punishment is babysitting you.”</p><p>Yono selected: <strong>TIME CONTROL & REGENERATION</strong>.</p><p>Next, the weapon. A glowing object appeared. It was a tennis racket. And honestly? It was sick. It shoots rockets.</p>`,
+          `<h3>Day One</h3><p>Yono woke up in a field. <strong>“HELP!! SOMEONE—HELP!!”</strong></p><p>He sprinted. In a clearing, a young girl (Liri) was cornered by a giant shadow wolf. Yono swung the racket.</p><p style="text-align:center; font-size:24px; font-weight:bold;">BOOOOM!!</p><p>A rocket blast ripped the creature apart. It regenerated instantly. The creature slashed his stomach open. It healed instantly. <em>“Right. Regeneration.”</em></p><p>He activated Time Control. Everything slowed. The wolf moved like molasses. Yono slammed his racket on its head—a massive burst blew the shadow apart.</p>`,
+          `<h3>The Warden</h3><p>“What did I tell you? Babysitting.” Violet stood there. “You have time manipulation. The shadows are hunting… and you’re the juiciest one.”</p><p>Suddenly, a metallic crack echoed. A towering armored figure stepped into view, black fog leaking from its armor.</p><p style="text-align:center; color:#fb7185; font-weight:900;">THE SHADE WARDEN</p><p>Violet grabbed Yono’s wrist. “Run. If you fight it now… you die.” She pulled him close as shadows surged behind them.</p><div style="margin-top:18px; text-align:center; opacity:0.7; letter-spacing:2px;">TO BE CONTINUED</div>`
+        ]
+      },
+      2: {
+        title: "Ep 2: The Twilight Valley",
+        pages: [
+          `<h3>The Twilight Valley</h3><p>Yono Kazeshima ran because running was the only thing that didn’t give him time to think. The trees were a blur of trunks and black leaves. Behind him the Herald’s roar shredded the air; it was a thing that made the sky hold its breath. It wanted him.</p><p>Violet’s grip on his wrist was iron in the dark, nails biting through leather. Her breath came fast but measured. Up close the faint heat of her skin was a kind of sacrament.</p><p>They dove through a ruined archway and into a hollowed-out stone shrine. Liri pressed into Yono’s back, tiny arms clinging to his jacket. Breathless, he shoved his racket into his hands and tried to feel useful instead of terrified.</p><p>“Don’t trust the quiet,” Violet murmured. “They smell panic like rain.”</p>`,
+          `<h3>Confession</h3><p>Outside the shrine the heartbeat of stone grew louder. Violet’s jaw worked. “I pushed you,” she whispered. “I saved a cat and your ankle was in the wrong place. I thought it would be funny. It wasn’t. And then... I couldn’t leave you to nothing. So I reincarnated you.”</p><p>The honesty in her voice was a blade. He wanted to make it better, but she shouldered the look away. “We have to move. Deeper into the city. Find the healer. Then federation papers, then sleep.”</p>`,
+          `<h3>Lumera City</h3><p>They reached the city of Lumera under a dying sun. Lanterns flickered on. The city welcomed them with a brittle hospitality; the kind that shows its teeth and keeps a knife handy.</p><p>They found Elder Meryn’s cottage—a burst of green herbs in a grey city. Meryn, a healer with short green hair, welcomed them. “You look like you’ve seen a ghost,” she said, stepping out. Inside, steam wrapped them like a benediction.</p><p>Serah Nightbloom found them as they were stacking bowls of stew. Serah arrived like a flare, tall and dangerous, leather creaking. “You waltz into Lumera and the whole damned forest decides it wants dessert,” she grinned.</p>`,
+          `<h3>The Gathering</h3><p>Rina & Rin—the twins—flitted about like confetti, two small shopgirls shifting a tray of potions between them, heedless of the danger. Yono made a small vow to protect them.</p><p>Mirika Solenne arrived later with a courtly rustle. Her robe slit scandalously high. She was elegance and disquiet wrapped into one. Kael Thornhart watched from the doorway like a storm. Silver-armed and angular, he didn't smile; he just saw and logged.</p><p>They offered a bath. A stone pool warmed by magic. Violet, Serah, and Mirika moved with an easy assertion around the water. Violet sat with her back pressed to Yono's chest. “Relax,” she murmured.</p>`,
+          `<h3>The Crawler</h3><p>It was then that his memories returned uninvited. A dirty hospital hallway, a blackness like a puncture wound—the System anchoring to his soul.</p><p>Outside, the night tightened. The Crawler surfaced between the alleys like a wall of oil and teeth. It was obscene. Violet squeezed Yono's hand. “We can’t outrun that.”</p><p>Serah spat and struck with her spear. Mirika let loose a chamber of light. Yono felt the black core inside him spiral. He concentrated, managing a tremor in time—a small bubble of slowed moments. Serah drove her spear into the creature’s scaling.</p><p>Violet leapt, body arcing like light, and drove a resonant rune into its hide. The creature shuddered backward. For that moment they had won.</p>`,
+          `<h3>Aftermath</h3><p>After the dust settled, Yono sat with his back against a cold stone. Violet curled around him like a rag doll. “Stay,” she whispered. “Stay because I can’t do this alone.”</p><p>He stared at the bruised sky. The women around them laughed with a brittle noise, the kind that cracks both humor and survival together.</p><p>Under the low stars, Yono’s thoughts folded into resolve. He had been given a racket that spat rockets and a goddess who smiled like she would break. It was enough. When the dawn bled slow and weak through the broken rafters, the war began again.</p>`
+        ]
+      }
+    };
+
+    let currentEpId = 1;
+    let currentPage = 0;
+    let readerSettings = { size: 18, font: "'Merriweather', serif" };
+
+    window.onload = () => {
+      renderEpisodes();
+      initCast(CAST_EP1, 'cast-grid-ep1');
+      initCast(CAST_EP2, 'cast-grid-ep2');
+      initSettings();
+      renderGallery();
+    };
+
+    /* ------------------------------------------------------------------
+       GALLERY LOGIC
+       ------------------------------------------------------------------ */
+    function renderGallery() {
+      const yonoGrid = document.getElementById('art-grid-yono');
+      const violetGrid = document.getElementById('art-grid-violet');
+
+      ASSET_FILES.forEach((filename, index) => {
+        const lowerName = filename.toLowerCase();
+        let targetGrid = null;
+
+        // Auto-sorting Logic
+        if (lowerName.includes('yono')) targetGrid = yonoGrid;
+        else if (lowerName.includes('violet')) targetGrid = violetGrid;
+
+        if (targetGrid) {
+          const card = document.createElement('div');
+          card.className = `art-card card-anim delay-${(index % 4) + 1}`;
+          card.innerHTML = `
+            <img 
+              src="assets/${filename}" 
+              class="art-img" 
+              alt="${filename}"
+              onerror="this.style.display='none'; this.parentNode.style.background = 'linear-gradient(45deg, #1a1625, #2e2a3b)';" 
+            />
+            <div class="art-label">${filename}</div>
+          `;
+          targetGrid.appendChild(card);
+        }
+      });
+    }
+
+    /* ------------------------------------------------------------------
+       RENDERERS
+       ------------------------------------------------------------------ */
+    function renderEpisodes() {
+      const grid = document.getElementById('episodes-grid');
+      grid.innerHTML = `
+        <div class="card card-anim delay-1">
+          <span class="ep-tag">EP 01</span>
+          <h3>The Goddess Who Pushed Me</h3>
+          <p>Yono dies by a refrigerator and meets a useless goddess who accidentally killed him to save a cat.</p>
+          <button class="cta-btn" style="padding:8px 20px; font-size:14px;" onclick="loadEpisode(1)">Read Now</button>
+        </div>
+        <div class="card card-anim delay-2">
+          <span class="ep-tag" style="color:#f472b6; background:rgba(244,114,182,0.2);">EP 02</span>
+          <h3>The Twilight Valley</h3>
+          <p>Running from the Shade Warden, Yono and Violet seek refuge in Lumera, meeting a wild cast of characters.</p>
+          <button class="cta-btn" style="padding:8px 20px; font-size:14px;" onclick="loadEpisode(2)">Read Now</button>
+        </div>
+      `;
+    }
+
+    function initCast(data, gridId) {
+      const grid = document.getElementById(gridId);
+      let delay = 0;
+      data.forEach((c, i) => {
+        delay++;
+        grid.innerHTML += `
+          <div class="card card-anim delay-${Math.min(delay, 4)}">
+            <div class="char-header">
+              <div class="char-icon" style="color:${c.color}; border-color:${c.color}44">${c.icon}</div>
+              <div>
+                <div style="display:flex; align-items:center;">
+                    <h3 style="font-size:16px; margin:0;">${c.name}</h3>
+                    <span class="age-badge">Age: ${c.age}</span>
+                </div>
+                <span style="font-size:11px; color:${c.color}; font-weight:700; text-transform:uppercase;">${c.role}</span>
+              </div>
+            </div>
+            <p>${c.desc}</p>
+          </div>
+        `;
+      });
+    }
+
+    /* ------------------------------------------------------------------
+       VIEW LOGIC
+       ------------------------------------------------------------------ */
+    function switchView(viewId, btn) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-' + viewId).classList.add('active');
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+    }
+
+    /* ------------------------------------------------------------------
+       READER LOGIC
+       ------------------------------------------------------------------ */
+    function loadEpisode(epId) {
+      currentEpId = epId;
+      currentPage = 0;
+      document.getElementById('reader').classList.add('open');
+      document.getElementById('reader-ep-title').innerText = EPISODES_DATA[epId].title;
+      renderPage();
+      applySettings();
+    }
+
+    function closeReader() {
+      document.getElementById('reader').classList.remove('open');
+      document.getElementById('panel-settings').classList.remove('open');
+    }
+
+    function renderPage() {
+      const data = EPISODES_DATA[currentEpId];
+      const content = document.getElementById('reader-content');
+      content.classList.remove('text-fade-in');
+      void content.offsetWidth; 
+      content.innerHTML = data.pages[currentPage];
+      content.classList.add('text-fade-in');
+      content.scrollTop = 0;
+      document.getElementById('page-indicator').innerText = `${currentPage + 1} / ${data.pages.length}`;
+      document.getElementById('prev-page-btn').disabled = currentPage === 0;
+      document.getElementById('next-page-btn').disabled = currentPage === data.pages.length - 1;
+    }
+
+    function changePage(delta) {
+      const max = EPISODES_DATA[currentEpId].pages.length;
+      const next = currentPage + delta;
+      if (next >= 0 && next < max) {
+        currentPage = next;
+        renderPage();
+      }
+    }
+
+    /* ------------------------------------------------------------------
+       SETTINGS
+       ------------------------------------------------------------------ */
+    function toggleSettings() {
+      const el = document.getElementById('panel-settings');
+      el.classList.toggle('open');
+    }
+
+    function initSettings() {
+      const slider = document.getElementById('font-size-range');
+      slider.addEventListener('input', (e) => {
+        readerSettings.size = e.target.value;
+        applySettings();
+      });
+    }
+
+    function setFont(type, btn) {
+      document.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if(type === 'serif') readerSettings.font = "'Merriweather', serif";
+      if(type === 'sans') readerSettings.font = "'Inter', sans-serif";
+      if(type === 'mono') readerSettings.font = "'Roboto Mono', monospace";
+      applySettings();
+    }
+
+    function applySettings() {
+      const content = document.getElementById('reader-content');
+      content.style.fontSize = readerSettings.size + 'px';
+      content.style.fontFamily = readerSettings.font;
+    }
+  </script>
+</body>
+</html>
